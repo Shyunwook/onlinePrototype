@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>ACE in Action</title>
+    <style type="text/css" media="screen">
+      #editor {
+        height: 300px;
+        width: 80%;
+      }
+    </style>
+    <script
+      src="https://code.jquery.com/jquery-3.5.1.js"
+      integrity="sha256-QWo7LDvxbWT2tbbQ97B53yJnYU3WhH/C8ycbRAkjPDc="
+      crossorigin="anonymous"
+    ></script>
+  </head>
+  <body>
+    <!-- <iframe
+      src="https://fast.wistia.com/embed/iframe/w29ukl25nf"
+      allowtransparency="true"
+      frameborder="0"
+      scrolling="no"
+      class="wistia_embed"
+      name="wistia_embed"
+      allowfullscreen
+      mozallowfullscreen
+      webkitallowfullscreen
+      oallowfullscreen
+      msallowfullscreen
+      width="640"
+      height="388"
+    ></iframe> -->
+    <script src="https://fast.wistia.com/assets/external/E-v1.js" async></script>
+    <div class="wistia_embed wistia_async_w29ukl25nf" style="height: 402px; position: relative; width: 640px">
+      <div
+        class="wistia_swatch"
+        style="
+          height: 100%;
+          left: 0;
+          opacity: 0;
+          overflow: hidden;
+          position: absolute;
+          top: 0;
+          transition: opacity 200ms;
+          width: 100%;
+        "
+      >
+        <img
+          src="https://fast.wistia.com/embed/medias/w29ukl25nf/swatch"
+          style="filter: blur(5px); height: 100%; object-fit: contain; width: 100%"
+          alt=""
+          aria-hidden="true"
+          onload="this.parentNode.style.opacity=1;"
+        />
+      </div>
+    </div>
+    <a id="success" href="#wistia_30q7n48g4f?time=10" style="display: none">Make French Toast</a>
+    <a id="fail" href="#wistia_cthngj8bay?time=0" style="display: none">black~~~!</a>
+    <div id="editor-block">
+      <select id="language">
+        <option value="javascript">javascript</option>
+        <option value="python">python</option>
+        <option value="r" selected>R</option>
+      </select>
+      <div id="editor"></div>
+      <button id="test" onclick="download()">Fire</button>
+      <!-- <button id="test" onclick="test()">test</button> -->
+
+      <div style="width: 400px; height: 300px; background: #131313; color: white; padding: 20px">
+        <!-- <p id="result" style="color: white; padding: 20px"></p> -->
+        <pre id="result"></pre>
+      </div>
+    </div>
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.12/ace.js"
+      integrity="sha512-GZ1RIgZaSc8rnco/8CXfRdCpDxRCphenIiZ2ztLy3XQfCbQUSCuk8IudvNHxkRA3oUg6q0qejgN/qqyG1duv5Q=="
+      crossorigin="anonymous"
+    ></script>
+
+    <script>
+      // 비디오 이벤트 컨트롤
+      // const video = document.querySelector("#lecture");
+      // const _once = (() => {
+      //   let flag = true;
+      //   return () => {
+      //     if (flag) {
+      //       if (video.currentTime > 5) {
+      //         $("#editor-block").show();
+      //         video.pause();
+      //         video.removeAttribute("controls");
+      //         flag = false;
+      //       }
+      //     }
+      //   };
+      // })();
+
+      // video.addEventListener("timeupdate", () => {
+      //   _once();
+      // });
+      // ------------------------------------------------------------
+
+      // setTimeout(() => {
+      //   var video = Wistia.api("w29ukl25nf");
+      //   video.addToPlaylist("cthngj8bay", {
+      //     playerColor: "00ff00",
+      //   });
+      //   video.addToPlaylist("w29ukl25nf", {
+      //     playerColor: "000000",
+      //   });
+      //   video.embedNext();
+      //   // video.play();
+      //   console.log("sss");
+      // }, 1000);
+      // window._wq = window._wq || [];
+      // let vv;
+      // window._wq = window._wq || [];
+      // _wq.push({
+      //   id: "_all",
+      //   onReady: function (video) {
+      //     video.addToPlaylist("w29ukl25nf", {}, { index: 0 });
+      //     video.addToPlaylist("cthngj8bay", {}, { index: 1 });
+      //     vv = video;
+      //     // video.embedNext();
+      //   },
+      // });
+
+      // function test() {
+      //   console.log(vv.embed);
+      //   vv.embedNext();
+      // }
+
+      //--------------------------------------------------------
+      var editor = ace.edit("editor");
+      editor.setTheme("ace/theme/monokai");
+      editor.session.setMode(`ace/mode/${$("#language option:selected").val()}`);
+      editor.setValue(`library(dplyr)\niris %\>% group_by(Species) %\>% summarise(sum = sum(Sepal.Length))`);
+
+      $("#language").on("change", () => {
+        let language = $("#language option:selected").val();
+        editor.session.setMode(`ace/mode/${language}`);
+      });
+
+      function download(type) {
+        let a = document.getElementById("a");
+        let code = editor.getValue();
+
+        let file = new Blob([code], { type: "text" });
+        let fd = new FormData();
+
+        fd.append("type", $("#language option:selected").val());
+        fd.append("userfile", file);
+
+        $.ajax({
+          url: "/upload",
+          method: "post",
+          data: fd,
+          enctype: "multipart/form-data",
+          processData: false,
+          contentType: false,
+        })
+          .done((data) => {
+            $("#result").text(data);
+            let answer = `# A tibble: 3 x 2
+  Species      sum
+  <fct>      <dbl>
+1 setosa      250.
+2 versicolor  297.
+3 virginica   329.`;
+            data = data.trim();
+            $("#result").text(data);
+            if (data === answer) {
+              alert("정답!");
+              $("#success")[0].click();
+            } else {
+              $("#fail")[0].click();
+              alert("실패!");
+            }
+            // if (data === answer) {
+            //   alert("정답!!");
+            // } else {
+            //   alert("땡!");
+            // }
+            // if (data.trim() === "30") {
+            //   // alert("정답입니다.");
+            //   const source = document.querySelector("#lecture-source");
+            //   // source.setAttribute("src", "event1.mp4");
+            //   console.log(data);
+            //   data.replace(/\n/gi, "<br/>");
+            //   $("#result").text(data);
+            //   // video.load();
+            //   // video.play();
+            //   // video.setAttribute("controls", true);
+            // } else {
+            //   // alert("틀렸습니다 다시 풀어보세요!");
+            //   const source = document.querySelector("#lecture-source");
+            //   // source.setAttribute("src", "뇌피셜_One The Women.mp4")
+            //   console.log(data);
+            //   data.replace(/\n/gi, "<br/>");
+            //   $("#result").text(data);
+            //   // video.load();
+            //   // video.play();
+            //   // video.setAttribute("controls", true);
+            // }
+          })
+          .fail((error) => {
+            console.log(error);
+          });
+      }
+    </script>
+  </body>
+</html>
